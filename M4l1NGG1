@@ -1,0 +1,509 @@
+--===================[ All Var ]===================--
+local display, shelf, mannq, pmaker, vault, gaia, ut, itemInfo = {}, {}, {}, {}, {}, {}, {}, {}
+
+-- Variabel Pathmaker Tambahan
+local x, y -- variabel untuk menyimpan posisi Pathmaker
+local lastChangedWorld = "" 
+local lastPathID = "RANDOM" 
+
+local function generateRandomID(length)
+    local chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    local id = ""
+    for i = 1, length do
+        local random_index = math.random(1, #chars)
+        id = id .. chars:sub(random_index, random_index)
+    end
+    return id
+end
+
+local function ovlay(msg)
+    sendVariant({ v1 = "OnTextOverlay", v2 = "`9[W i R U P] `7" .. msg })
+end
+
+-- FIX: Menambahkan fungsi 'log' yang hilang (untuk output console)
+local function log(msg)
+    LogToConsole(msg)
+end
+
+-- Pengaturan BG dan Border yang Dikehendaki
+local DIALOG_STYLE = [[
+set_bg_color|43,34,74,200
+set_border_color|112,86,191,255
+set_default_color|`o
+]]
+
+local function joinPath(worldName, pathID)
+    sendPacket(3, "action|join_request\nname|" .. worldName .. "|" .. pathID .. "|\ninvitedWorld|0")
+    log("`9[`2JOINING PATH`9] World: `#" .. worldName .. "`9 | Path ID: `2" .. pathID)
+end
+
+--===================[ FUNGSI MAGNET BARU ]===================--
+
+local function getItemObject() 
+    itemInfo = {} 
+    for _, obj in pairs(getObjectList() or {}) do
+        local itemid = obj.itemid or obj.itemId or obj.id
+        local amount = obj.amount or 0
+        local oid = obj.id or obj.oid or 0 
+        local nameItem = ""
+        
+        pcall(function() nameItem = growtopia.getItemName(itemid) end) 
+        
+        table.insert(itemInfo, "add_label_with_icon_button|small|`wItem : `9" .. (nameItem or itemid) .. " `wAmount : [`#" .. (amount) .. "``]|left|" .. (itemid) .. "|obj_" .. (oid) .. "|\n")
+    end
+end
+
+--===================[ FUNGSI PATHMAKER DIALOG ]===================--
+
+local function getPathmakers()
+    local pathmakers = {}
+    for _, obj in pairs(GetTiles() or {}) do 
+        if obj.fg == 1684 then 
+            table.insert(pathmakers, {
+                id = obj.fg,
+                x = obj.posX or obj.x, 
+                y = obj.posY or obj.y  
+            })
+        end
+    end
+    return pathmakers
+end
+
+function showMainMenuPath()
+    local pathmakers = getPathmakers()
+    local menu = DIALOG_STYLE .. [[
+add_label_with_icon|big|`wPathmaker Scanner|left|1684|
+add_spacer|small|
+add_label_with_icon|small|`wTotal Pathmakers: `#]] .. #pathmakers .. [[|left|1684|
+add_spacer|small|
+add_button|scanPathmakers|`2Scan Pathmakers|noflags|0|0|
+add_spacer|small|
+add_button|backToMainMenu|Back to Maling Menu|noflags|0|0|
+end_dialog|pathscan|Close||
+]]
+    sendVariant({v1 = "OnDialogRequest", v2 = menu})
+end
+
+function showPathmakerList()
+    local pathmakers = getPathmakers()
+    if #pathmakers == 0 then
+        local noPathDialog = DIALOG_STYLE .. [[
+add_label_with_icon|big|`4No Pathmakers Found|left|1684|
+add_spacer|small|
+add_label|small|No pathmaker blocks (ID 1684) found in this world.|\n
+add_button|backToMenuPath|Back|noflags|0|0|
+end_dialog|nopath|Close|| 
+]]
+        sendVariant({v1 = "OnDialogRequest", v2 = noPathDialog})
+        return
+    end
+    
+    local itemList = ""
+    for i, path in ipairs(pathmakers) do
+        itemList = itemList .. "add_label_with_icon_button|small|`0Path: `9X: "..path.x.." `9Y: "..path.y.."|left|1684|path_" .. i .. "|\n"
+    end
+    
+    local listDialog = DIALOG_STYLE .. [[
+add_label_with_icon|big|`wPATHMAKER LIST|left|1684|
+add_spacer|small|
+add_label|small|`wFound `#]] .. #pathmakers .. [[ `wpathmakers in world:|\n
+add_spacer|small|
+]] .. itemList .. [[
+add_spacer|small|
+add_button|backToMenuPath|Back|noflags|0|0|
+end_dialog|pathlist|Close|| 
+]]
+    sendVariant({v1 = "OnDialogRequest", v2 = listDialog})
+end
+
+function showChangeDialog(selectedX, selectedY)
+    local changeDialog = DIALOG_STYLE .. [[
+add_label_with_icon|big|`wSELECTED PATHMAKER|left|1684|
+add_spacer|small|
+add_label|small|Position: X: `#]] .. selectedX .. [[`w, Y: `#]] .. selectedY .. [[|
+add_spacer|small|
+add_textbox|Click button below to change to RANDOM ID:|left| \n
+add_spacer|small|
+add_button|changePath|`2Change to Random ID|noflags|0|0| 
+add_button|backToListPath|Back to List|noflags|0|0|
+end_dialog|changepath|Cancel|OK| 
+]]
+    sendVariant({v1 = "OnDialogRequest", v2 = changeDialog})
+end
+
+function showSuccessDialog()
+    local worldName = GetWorldName()
+    lastChangedWorld = worldName
+    local successDialog = DIALOG_STYLE .. [[
+add_label_with_icon|big|`2SUCCESS|left|1684|
+add_spacer|small|
+add_label|small|`wPath successfully changed to `2]] .. lastPathID .. [[`w!|\n
+add_spacer|small|
+add_label|small|`wWorld: `#]] .. worldName .. [[|\n
+add_label|small|`wPath ID: `2]] .. lastPathID .. [[|\n
+add_spacer|small|
+add_button|joinPath|`2Join Path ]] .. lastPathID .. [[|noflags|0|0|
+add_button|backToMainMenu|Back to Menu|noflags|0|0|
+end_dialog|success|Close|| 
+]]
+    sendVariant({v1 = "OnDialogRequest", v2 = successDialog})
+end
+
+--===================[ DIALOG MENU UTAMA MALING MENU ]===================--
+local main_menu = DIALOG_STYLE .. [[
+add_label_with_icon|big|Maling Menu 2.0|left|9474|
+add_spacer|small|
+add_label_with_icon|small|`7: WiRUP|left|12436|
+add_label_with_icon|small|`2https://discord.gg/Txvdtdzu7X|left|0|
+add_spacer|small|
+add_label_with_icon|small|`2[+] `0/magnet `2[ `0Take Item In Magnet `2]|left|6140|
+add_label_with_icon|small|`2[+] `0/display `2[ `0Take Item In Display Block `2]|left|2946|
+add_label_with_icon|small|`2[+] `0/shelf `2[ `0Take Item In Display Shelf `2]|left|3794|
+add_label_with_icon|small|`2[+] `0/mannq `2[ `0Take Item In Mannequin `2]|left|1420|
+add_label_with_icon|small|`2[+] `0/scan `2[ `0Change Path Marker ID `2] `c(RANDOM)`|left|1684|
+add_label_with_icon|small|`2[+] `0/vault `2[ `0Bypass Safe Vault `2]|left|8878|
+add_label_with_icon|small|`2[+] `0/gaia `2[ `0Take Seed In Gaia `2]|left|6946|
+add_label_with_icon|small|`2[+] `0/ut `2[ `0Take Block In UT`2 ]|left|6948|
+add_spacer|small|
+add_url_button||Join Discord|NOFLAGS|https://discord.gg/Txvdtdzu7X|wanna Join My Discord Server?|0|0|
+end_dialog|mainmenu|Close|| 
+]]
+
+sendVariant({ v1 = "OnDialogRequest", v2 = main_menu })
+
+
+--===================[ FUNGSI AMBIL TILE LAIN ]===================--
+
+local function ambilDisplay()
+    display = {}
+    for _, t in pairs(GetTiles() or {}) do
+        if t.fg == 2946 then
+            table.insert(display, { x = t.posX or t.x, y = t.posY or t.y, fg = t.fg })
+        end
+    end
+end
+local function ambilShelf()
+    shelf = {}
+    local ids = { 10552, 10190, 3794 }
+    for _, t in pairs(GetTiles() or {}) do
+        for _, id in ipairs(ids) do
+            if t.fg == id then
+                table.insert(shelf, { x = t.posX or t.x, y = t.posY or t.y, fg = t.fg })
+            end
+        end
+    end
+end
+local function ambilMannq()
+    mannq = {}
+    local ids = { 10078, 10076, 10074, 10072, 6214, 1420 }
+    for _, t in pairs(GetTiles() or {}) do
+        for _, id in ipairs(ids) do
+            if t.fg == id then
+                table.insert(mannq, { x = t.posX or t.x, y = t.posY or t.y, fg = t.fg })
+            end
+        end
+    end
+end
+local function ambilVault()
+    vault = {}
+    for _, t in pairs(GetTiles() or {}) do
+        if t.fg == 8878 then
+            table.insert(vault, { x = t.posX or t.x, y = t.posY or t.y, fg = t.fg })
+        end
+    end
+end
+local function ambilGaia()
+    gaia = {}
+    for _, t in pairs(GetTiles() or {}) do
+        if t.fg == 6946 then
+            table.insert(gaia, { x = t.posX or t.x, y = t.posY or t.y, fg = t.fg })
+        end
+    end
+end
+local function ambilUT()
+    ut = {}
+    for _, t in pairs(GetTiles() or {}) do
+        if t.fg == 6948 then
+            table.insert(ut, { x = t.posX or t.x, y = t.posY or t.y, fg = t.fg })
+        end
+    end
+end
+
+
+--===================[ main hook ]===================--
+local function mainHook(flag, packet)
+
+    -- === 1. CHAT COMMANDS (/command) ===
+    if flag == 2 and packet:find("action|input") then
+
+        local teks = (packet:match("text|([^\n]*)") or ""):lower()
+
+        -- ==== MAGNET ====
+        if teks:find("^/magnet") then
+            getItemObject()
+            local magnet_dialog = DIALOG_STYLE .. string.format([[
+add_label_with_icon|big|MAGNET EXPLOIT|left|6140|
+add_spacer|small|
+add_smalltext|Ensure you have at least one 'Extract O' Snap' and that the item is located in a public (unlocked) area before proceeding.|
+%s
+add_quick_exit|||
+end_dialog|scann|Exit||
+]], table.concat(itemInfo))
+            sendVariant({ v1 = "OnDialogRequest", v2 = magnet_dialog })
+            return true
+        end -- <--- End of /magnet command block
+
+        -- ==== DISPLAY ====
+        if teks:find("^/display") then
+            ambilDisplay()
+            local dlg = DIALOG_STYLE .. [[
+add_label_with_icon|big|Display Block Long Take|left|2946|
+add_spacer|small|
+]]
+            if #display > 0 then
+                for i, d in ipairs(display) do
+                    dlg = dlg .. "add_label_with_icon_button|small|`0Display: `9X:"..d.x.." `9Y:"..d.y.."|left|"..d.fg.."|disp_"..i.."|\n"
+                end
+            else
+                dlg = dlg .. "add_label|`4Tidak ada Display Block.|\n"
+            end
+            dlg = dlg .. "end_dialog|display_hack|Close||"
+            sendVariant({ v1 = "OnDialogRequest", v2 = dlg })
+            return true
+        end -- <--- End of /display command block
+
+        -- ==== SHELF ====
+        if teks:find("^/shelf") then
+            ambilShelf()
+            local dlg = DIALOG_STYLE .. [[
+add_label_with_icon|big|Display Shelf Long Take|left|3794|
+add_spacer|small|
+]]
+            if #shelf > 0 then
+                for i, d in ipairs(shelf) do
+                    dlg = dlg .. "add_label_with_icon_button|small|`0Shelf: `9X:"..d.x.." `9Y:"..d.y.."|left|"..d.fg.."|shelf_"..i.."|\n"
+                end
+            else
+                dlg = dlg .. "add_label|`4Tidak ada Display Shelf.|\n"
+            end
+            dlg = dlg .. "end_dialog|shelf_hack|Close||"
+            sendVariant({ v1 = "OnDialogRequest", v2 = dlg })
+            return true
+        end -- <--- End of /shelf command block
+
+        -- ==== MANNEQUIN ====
+        if teks:find("^/mannq") then
+            ambilMannq()
+            local dlg = DIALOG_STYLE .. [[
+add_label_with_icon|big|Mannequin Long Take|left|1420|
+add_spacer|small|
+]]
+            if #mannq > 0 then
+                for i, d in ipairs(mannq) do
+                    dlg = dlg .. "add_label_with_icon_button|small|`0Mannq: `9X:"..d.x.." `9Y:"..d.y.."|left|"..d.fg.."|mannq_"..i.."|\n"
+                end
+            else
+                dlg = dlg .. "add_label|`4Tidak ada Mannequin.|\n"
+            end
+            dlg = dlg .. "end_dialog|mannq_hack|Close||"
+            sendVariant({ v1 = "OnDialogRequest", v2 = dlg })
+            return true
+        end -- <--- End of /mannq command block
+        
+        -- ==== PATH MAKER (/scan) ====
+        if teks:find("^/scan") then
+            showMainMenuPath() 
+            return true
+        end -- <--- End of /scan command block
+        
+        -- ==== SAFE VAULT ====
+        if teks:find("^/vault") then
+            ambilVault()
+            local dlg = DIALOG_STYLE .. [[
+add_label_with_icon|big|Safe Vault List|left|8878|
+add_spacer|small|
+]]
+            if #vault > 0 then
+                for i, d in ipairs(vault) do
+                    dlg = dlg .. "add_label_with_icon_button|small|`0Vault: `9X:"..d.x.." `9Y:"..d.y.."|left|"..d.fg.."|vault_"..i.."|\n"
+                end
+            else
+                dlg = dlg .. "add_label|`4Tidak ada Safe Vault.|\n"
+            end
+            dlg = dlg .. "end_dialog|vault_hack|Close||"
+            sendVariant({ v1 = "OnDialogRequest", v2 = dlg })
+            return true
+        end -- <--- End of /vault command block
+        
+        -- ==== GAIA ====
+        if teks:find("^/gaia") then
+            ambilGaia()
+            local dlg = DIALOG_STYLE .. [[
+add_label_with_icon|big|Take Seed Long Take|left|6946|
+add_spacer|small|
+]]
+            if #gaia > 0 then
+                for i, d in ipairs(gaia) do
+                    dlg = dlg .. "add_label_with_icon_button|small|`0Gaia: `9X:"..d.x.." `9Y:"..d.y.."|left|"..d.fg.."|gaia_"..i.."|\n"
+                end
+            else
+                dlg = dlg .. "add_label|`4Tidak ada Gaia Tree.|\n"
+            end
+            dlg = dlg .. "end_dialog|gaia_hack|Close||"
+            sendVariant({ v1 = "OnDialogRequest", v2 = dlg })
+            return true
+        end -- <--- End of /gaia command block
+
+        -- ==== UT ====
+        if teks:find("^/ut") then
+            ambilUT()
+            local dlg = DIALOG_STYLE .. [[
+add_label_with_icon|big|Take Block Long Take|left|6948|
+add_spacer|small|
+]]
+            if #ut > 0 then
+                for i, d in ipairs(ut) do
+                    dlg = dlg .. "add_label_with_icon_button|small|`0UT: `9X:"..d.x.." `9Y:"..d.y.."|left|"..d.fg.."|ut_"..i.."|\n"
+                end
+            else
+                dlg = dlg .. "add_label|`4Tidak ada UT.|\n"
+            end
+            dlg = dlg .. "end_dialog|ut_hack|Close||"
+            sendVariant({ v1 = "OnDialogRequest", v2 = dlg })
+            return true
+        end -- <--- End of /ut command block
+        
+        if teks:find("^/pmaker") then
+             ovlay("`4/pmaker is deprecated. Please use /scan for Path Maker menu.")
+             return true
+        end
+    
+    end -- <--- End of CHAT COMMANDS block (closing IF from Line 235)
+        
+    -- === 2. DIALOG RETURNS (Handle Tombol) ===
+    if flag == 2 and packet:find("dialog_name") then
+        
+        -- Logika Pathmaker BARU - Dialog Return
+        
+        -- FIX: Mengubah logika IF/ELSEIF/END ke struktur yang benar
+        if packet:find("backToMainMenu") then
+            sendVariant({ v1 = "OnDialogRequest", v2 = main_menu })
+            return true
+        
+        elseif packet:find("backToMenuPath") then
+             showMainMenuPath()
+             return true
+
+        elseif packet:find("backToListPath") then
+            showPathmakerList()
+            return true
+        
+        elseif packet:find("scanPathmakers") then
+            showPathmakerList()
+            return true
+        
+        elseif packet:find("buttonClicked|path_") then
+            local pathmakers = getPathmakers()
+            local index = tonumber(packet:match("buttonClicked|path_(%d+)"))
+            
+            if index and pathmakers[index] then
+                local selected = pathmakers[index]
+                x, y = selected.x, selected.y
+                showChangeDialog(x, y)
+            end
+            return true
+
+        elseif packet:find("changePath") then
+            if x and y then
+                local randomID = generateRandomID(8)
+                lastPathID = randomID 
+                
+                sendPacket(2, "action|dialog_return\ndialog_name|sign_edit\ntilex|"..x.."|\ntiley|"..y.."|\nsign_text|"..randomID)
+                log("`9[`2PATH CHANGED`9] Position: X:`#"..x.." Y:`#"..y.." | New ID: `2"..randomID)
+                
+                showSuccessDialog()
+            end
+            return true
+        
+        elseif packet:find("joinPath") then
+            if lastPathID ~= "RANDOM" then
+                local worldToJoin = lastChangedWorld ~= "" and lastChangedWorld or GetWorldName()
+                joinPath(worldToJoin, lastPathID) 
+            else
+                log("`4ERROR:`w No recent path change to join!")
+            end
+            return true
+        
+        -- ==== MAGNET LOGIC BARU ====
+        elseif packet:find("dialog_name|scann") then
+            local po = packet:match("buttonClicked|obj_(%d+)")
+            if po then
+                sendPacket(2, "action|dialog_return\ndialog_name|extractor\ntilex|0|\ntiley|0|\nstartIndex|0|\nextractorID|6140|\nbuttonClicked|extractOnceObj_" .. po)
+                ovlay("Attempting to take object ID: " .. po)
+            end
+            return true
+
+        -- === LOGIKA HACK LAINNYA (Dialog Returns) ===
+        
+        elseif packet:find("dialog_name|display_hack") then 
+            local idx = tonumber(packet:match("buttonClicked|disp_(%d+)"))
+            if idx and display[idx] then
+                local d = display[idx]
+                sendPacket(2, "action|dialog_return\ndialog_name|displayblock\ntilex|"..d.x.."|\ntiley|"..d.y.."|\n")
+                ovlay("Success Long Take Item In Display Block")
+            end
+            return true
+        
+        elseif packet:find("dialog_name|shelf_hack") then
+            local idx = tonumber(packet:match("buttonClicked|shelf_(%d+)"))
+            if idx and shelf[idx] then
+                local d = shelf[idx]
+                sendPacket(2, "action|dialog_return\ndialog_name|dispshelf\ntilex|"..d.x.."|\ntiley|"..d.y.."|\nbuttonClicked|remove\n")
+                ovlay("Success Long Take Item In Display Shelf")
+            end
+            return true
+        
+        elseif packet:find("dialog_name|mannq_hack") then
+            local idx = tonumber(packet:match("buttonClicked|mannq_(%d+)"))
+            if idx and mannq[idx] then
+                local d = mannq[idx]
+                sendPacket(2, "action|dialog_return\ndialog_name|mannequin_edit\ntilex|"..d.x.."|\ntiley|"..d.y.."|\nbuttonClicked|clear\ncheckbox|0\ncheckbox|0\ncheckbox|0\ncheckbox|0\nsign_text|Free script youtube: WirupGT\n")
+                ovlay("Success Long Take Item In Mannequin")
+            end
+            return true
+        
+        elseif packet:find("dialog_name|vault_hack") then
+            local idx = tonumber(packet:match("buttonClicked|vault_(%d+)"))
+            if idx and vault[idx] then
+                local d = vault[idx]
+                sendPacket(2, "action|dialog_return\ndialog_name|storageboxxtreme\ntilex|"..d.x.."|\ntiley|"..d.y.."|\nitemid|1|\nbuttonClicked|cancel\nitemcount|1\n")
+                ovlay("Safe Vault Tile Info: X:"..d.x.." Y:"..d.y)
+            end
+            return true
+        
+        elseif packet:find("dialog_name|gaia_hack") then
+            local idx = tonumber(packet:match("buttonClicked|gaia_(%d+)"))
+            if idx and gaia[idx] then
+                local d = gaia[idx]
+                sendPacket(2, "action|dialog_return\ndialog_name|itemremovedfromsucker\ntilex|"..d.x.."|\ntiley|"..d.y.."|\nitemtoremove|199\n")
+                ovlay("Success Long Take Gaia")
+            end
+            return true
+        
+        elseif packet:find("dialog_name|ut_hack") then
+            local idx = tonumber(packet:match("buttonClicked|ut_(%d+)"))
+            if idx and ut[idx] then
+                local d = ut[idx]
+                sendPacket(2, "action|dialog_return\ndialog_name|itemremovedfromsucker\ntilex|"..d.x.."|\ntiley|"..d.y.."|\nitemtoremove|199\n")
+                ovlay("Success Long Take UT")
+            end
+            return true
+        end
+        
+    end
+
+    return false
+end
+
+--===================[ HOOK REGISTER ]===================--
+addHook(mainHook, "onSendPacket")
