@@ -1,0 +1,230 @@
+--=====================================================--
+-- AUTO CLAVE GROWLAUNCHER - SIMPLE VERSION WITH FILTER
+--=====================================================--
+
+local ignored_tools = {}  -- Untuk simpan tools yang di-ignore
+local current_id, current_x, current_y, current_paket = 0, 0, 0, ""
+
+-- Nama tools untuk display
+local tool_names = {
+    [1270] = "Stitches", [1260] = "Scalpel", [1266] = "Antibiotic",
+    [1262] = "Anesthetic", [1264] = "Antiseptic", [1258] = "Sponge",
+    [4318] = "Lab Kit", [4308] = "Pins", [1268] = "Splint",
+    [4314] = "Clamp", [4312] = "Defibrillator", [4316] = "Ultrasound",
+    [4310] = "Transfusion"
+}
+
+-- Fungsi cek apakah tool di-ignore
+local function isIgnored(id)
+    return ignored_tools[tostring(id)] == true
+end
+
+-- Menu Filter GUI
+function showFilterMenu(show_saved_message)
+    local menu = "set_default_color|`o\nadd_label_with_icon|big|`wCLAVE FILTER|left|7068|\nadd_spacer|small|\n"
+    
+    -- Tampilkan pesan save jika ada
+    if show_saved_message then
+        menu = menu .. "add_textbox|`2✓ Filter berhasil disimpan!|left|\n"
+    end
+    
+    menu = menu .. "add_textbox|`0Centang tools yang `4TIDAK `0ingin di-clave:|left|\nadd_spacer|small|\n"
+    
+    -- Daftar Tools Surg
+    local surg_tools = {
+        {1270, "Stitches"}, {1260, "Scalpel"}, {1266, "Antibiotics"}, 
+        {1262, "Anesthetic"}, {1264, "Antiseptic"}, {1258, "Sponge"},
+        {4318, "Lab Kit"}, {4308, "Pins"}, {1268, "Splint"},
+        {4314, "Clamp"}, {4312, "Defibrillator"}, {4316, "Ultrasound"}, {4310, "Transfusion"}
+    }
+    
+    -- Tambahkan checkbox untuk setiap tool
+    for _, tool in ipairs(surg_tools) do
+        local check = isIgnored(tool[1]) and "1" or "0"
+        menu = menu .. "add_checkbox|ignore_" .. tool[1] .. "|`w" .. tool[2] .. "|" .. check .. "|\n"
+    end
+    
+    menu = menu .. "add_spacer|small|\n"
+    
+    -- Tampilkan status tools yang di-ignore
+    local ignored_count = 0
+    local ignored_names = {}
+    for id_str, _ in pairs(ignored_tools) do
+        local id = tonumber(id_str)
+        local name = tool_names[id] or "ID:" .. id_str
+        table.insert(ignored_names, name)
+        ignored_count = ignored_count + 1
+    end
+    
+    if ignored_count > 0 then
+        menu = menu .. "add_textbox|`4Tools yang TIDAK akan di-clave:|left|\n"
+        
+        if ignored_count == 1 then
+            menu = menu .. "add_smalltext|`4• " .. ignored_names[1] .. "|left|\n"
+        elseif ignored_count == 2 then
+            menu = menu .. "add_smalltext|`4• " .. ignored_names[1] .. "|left|\n"
+            menu = menu .. "add_smalltext|`4• " .. ignored_names[2] .. "|left|\n"
+        elseif ignored_count == 3 then
+            menu = menu .. "add_smalltext|`4• " .. ignored_names[1] .. "|left|\n"
+            menu = menu .. "add_smalltext|`4• " .. ignored_names[2] .. "|left|\n"
+            menu = menu .. "add_smalltext|`4• " .. ignored_names[3] .. "|left|\n"
+        else
+            menu = menu .. "add_smalltext|`4• " .. ignored_names[1] .. "|left|\n"
+            menu = menu .. "add_smalltext|`4• " .. ignored_names[2] .. "|left|\n"
+            menu = menu .. "add_smalltext|`4• " .. ignored_names[3] .. "|left|\n"
+            menu = menu .. "add_smalltext|`4• dan " .. (ignored_count - 3) .. " lainnya|left|\n"
+        end
+        
+        menu = menu .. "add_spacer|small|\n"
+    else
+        menu = menu .. "add_textbox|`2✓ Semua tools akan di-clave|left|\n"
+        menu = menu .. "add_spacer|small|\n"
+    end
+    
+    menu = menu .. "add_button|save_filter|`2SAVE SETTINGS|noflags|0|0|\n"
+    menu = menu .. "add_quick_exit|\nend_dialog|clave_filter|Close||"
+    
+    SendVariant({v1 = "OnDialogRequest", v2 = menu})
+end
+
+-- Command handler untuk /clave
+function handleCommand(flag, packet)
+    if flag == 2 and packet:find("action|input") then
+        local text = packet:match("text|([^\n]+)") or ""
+        if text:lower():find("^/clave") then
+            showFilterMenu(false)
+            return true
+        end
+    end
+    
+    -- Handle save button dari dialog filter
+    if flag == 2 and packet:find("dialog_name") and packet:find("buttonClicked|save_filter") then
+        -- Reset ignored tools
+        ignored_tools = {}
+        
+        -- Parse checkbox yang dicentang
+        local dialog_text = packet:match("dialog_text|([^\n]+)") or packet
+        for id_str in dialog_text:gmatch("ignore_(%d+)|1") do
+            ignored_tools[id_str] = true
+        end
+        
+        -- Tampilkan menu lagi dengan pesan sukses
+        showFilterMenu(true)
+        
+        -- Tampilkan di console juga
+        local ignored_count = 0
+        for _ in pairs(ignored_tools) do ignored_count = ignored_count + 1 end
+        LogToConsole("`2[SUCCESS] `wFilter diperbarui! " .. ignored_count .. " tools di-ignore")
+        
+        return true
+    end
+    
+    return false
+end
+
+-- Main Clave Logic (dari script awal)
+function clave(var)
+    if var.v1:find("OnDialogRequest") then
+        if var.v2:find("With this device") then
+            local data = {}
+            local tools = {}
+            local paket = ""
+            
+            -- Tentukan tools berdasarkan device
+            if var.v2:find("Autoclave") then
+                tools = {
+                    1270, -- Stitches
+                    1260, -- Scalpel
+                    1266, -- Antibiotic
+                    1262, -- Anesthetic
+                    1264, -- Antiseptic
+                    1258, -- Sponge
+                    4318, -- Lab Kit
+                    4308, -- Pins
+                    1268, -- Splint
+                    4314, -- Clamp
+                    4312, -- Defibrillator
+                    4316, -- Ultrasound
+                    4310  -- Transfusion
+                }
+                paket = "autoclave"
+            elseif var.v2:find("Nanoforge") then
+                tools = {
+                    6520, -- AI Brain
+                    6538, -- Cyborg Diploma
+                    6522, -- Galactic Bolt
+                    6528, -- Giga Blaster
+                    6540, -- Torpedo
+                    6518, -- Hyper Shield
+                    6530, -- Quadrascanner
+                    6524, -- Med Kit
+                    6536, -- Supplier
+                    6534, -- Stellar Document
+                    6532, -- Tactical Drone
+                    6526  -- Teleporter
+                }
+                paket = "star tool nanoforge"
+            end
+            
+            -- Cek inventory dan kumpulkan data (HANYA tools yang TIDAK di-ignore)
+            for i, v in ipairs(tools) do
+                -- Skip jika tool di-ignore
+                if not isIgnored(v) then
+                    local amount = 0
+                    for _, item in pairs(GetInventory()) do
+                        if item.id == v then
+                            amount = item.amount
+                            break
+                        end
+                    end
+                    
+                    if amount > 0 then
+                        data[#data+1] = {v, amount}
+                    end
+                end
+            end
+            
+            -- Jika ada tools yang bisa di-clave
+            if #data > 0 then
+                -- Cari tool dengan jumlah terbanyak
+                for j = 1, #data - 1 do
+                    if tonumber(data[1][2]) < tonumber(data[j+1][2]) then
+                        data[1], data[j+1] = data[j+1], data[1]
+                    end
+                end
+                
+                current_id = data[1][1]
+                current_x = var.v2:match("|tilex|(%d+)")
+                current_y = var.v2:match("|tiley|(%d+)")
+                current_paket = paket
+                
+                -- Tampilkan di console saja
+                local selected_name = tool_names[current_id] or "Unknown"
+                LogToConsole("`2[CLAVE] `wMenggunakan " .. selected_name .. " (Jumlah: " .. data[1][2] .. ")")
+                
+                -- Kirim packet untuk pilih tool
+                SendPacket(2, "action|dialog_return\ndialog_name|"..paket.."\ntilex|"..current_x.."|\ntiley|"..current_y.."|\nitemID|"..current_id.."|\nbuttonClicked|tool"..current_id)
+                
+            else
+                LogToConsole("`4[ERROR] `0Tidak ada tools yang bisa di-clave!")
+            end
+            
+        elseif var.v2:find("Are you sure you want") then
+            -- Konfirmasi
+            if current_id > 0 then
+                SendPacket(2, "action|dialog_return\ndialog_name|"..current_paket.."\ntilex|"..current_x.."|\ntiley|"..current_y.."|\nitemID|"..current_id.."|\nbuttonClicked|verify")
+                LogToConsole("`2[SUCCESS] `wTool berhasil di-clave!")
+            end
+        end
+        return true
+    end
+    return false
+end
+
+-- Register hooks
+AddHook(handleCommand, "onSendPacket")  -- Untuk command /clave
+AddHook(clave, "OnVariant")             -- Untuk logic utama
+
+-- Startup message
+LogToConsole("`2[`9AUTO CLAVE`2] `wScript loaded!")
+LogToConsole("`2[`9COMMAND`2] `0Ketik `/clave` untuk buka menu filter")
