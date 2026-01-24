@@ -1,0 +1,141 @@
+--=====================================================--
+-- AUTO SURGERY V2 - MANUAL START EDITION (GENTAHAX)
+--=====================================================--
+
+function sendOkay() 
+    local okayDialog = [[
+set_bg_color|43,34,74,200
+set_border_color|112,86,191,255
+set_default_color|`o
+add_label_with_icon|big|`wAuto Surgery Gentahax |left|7068|
+add_spacer|small|
+add_textbox|`0Dont Resell This Script FREE!|left|
+add_textbox|`9discord.gg/Txvdtdzu7X|left|
+add_spacer|small|
+add_label_with_icon|small|`cWorks On SurgE & TrainE|left|482|
+add_spacer|small|
+add_url_button||Join Discord|NOFLAGS|https://discord.gg/Txvdtdzu7X|Wanna Join My Discord Server?|0|0|
+end_dialog|bye|Close|
+add_quick_exit|
+]]
+    sendVariant({[0] = "OnDialogRequest",[1] = okayDialog})
+end
+
+function inv(itemid)
+    for _, item in pairs(getInventory()) do
+        if item.id == itemid then
+            return item.amount
+        end
+    end
+    return 0
+end
+
+local function Decolorize(parameter)
+    parameter = parameter:gsub("`[`0-9A-Za-z%+!@#%$%%%^&%*%(%)%-'\":;,%?~\\|<>{}%[%]%.]?", "")
+    return parameter
+end
+
+local function Use(parameter)
+    local tool = {
+        ["Sponge"] = 1258, ["Scalpel"] = 1260, ["Anesthetic"] = 1262,
+        ["Antiseptic"] = 1264, ["Antibiotics"] = 1266, ["Splint"] = 1268,
+        ["Stitches"] = 1270, ["Fix It!"] = 1296, ["Pins"] = 4308,
+        ["Transfusion"] = 4310, ["Defibrillator"] = 4312, ["Clamp"] = 4314,
+        ["Ultrasound"] = 4316, ["Lab Kit"] = 4318
+    }
+    logToConsole("`2[ `9SURGERY `2] `c"..parameter)
+    sendPacket(2, "action|dialog_return\ndialog_name|surgery\nbuttonClicked|tool" .. tostring(tool[parameter]))
+end
+
+function place(x,y,id)
+    sendPacketRaw(false, {
+        punchx = x,
+        punchy = y,
+        x = getLocal().pos.x,
+        y = getLocal().pos.y,
+        type = 3,
+        value = id
+    })
+end
+
+local surgery = nil
+findSurg = false -- findSurg dimatikan agar tidak auto-wrench
+
+sendOkay()
+
+-- Hook menggunakan OnVarlist sesuai API Gentahax
+AddHook("OnVarlist","WP_AUTO_SURGERY",function(var)
+    -- Auto Legal (Tetap aktif agar otomatis saat lisensi dicabut)
+    if var[0] == "OnConsoleMessage" then
+        if var[1]:find("YOUR MEDICAL LICENSE IS REVOKED!") then
+            if inv(3172) > 0 then
+                logToConsole("`2[ `9SYSTEM `2] `cAuto Legal..")
+                local xpos,ypos = math.floor(getLocal().pos.x/32), math.floor(getLocal().pos.y/32)
+                place(xpos,ypos,3172)
+            end
+        end
+    elseif var[0] == "OnTalkBubble" and var[2]:find("with your malpractice issues.") then
+        local xpos,ypos = math.floor(getLocal().pos.x/32), math.floor(getLocal().pos.y/32)
+        place(xpos,ypos,3172)
+    end
+
+    -- Surgery Logic
+    if (var[0] == "OnDialogRequest" and (var[1]:find("end_dialog|surgery|||") or var[1]:find("|4296|") or var[1]:find("|8558|"))) then
+        -- Bagian ini dimodifikasi agar lo harus klik Okay/Perform secara manual
+        if (var[1]:find("Okay!") or var[1]:find("Perform Surgery")) then
+            surgery = nil
+            logToConsole("`9[Wirup] `0Dont Share & Sell This Script")
+            return false -- Melewatkan auto-start agar lo bisa klik sendiri
+        
+        -- Logic otomatis berjalan SETELAH surgery dimulai
+        elseif (var[1]:find("You can't see what you are doing!")) then
+            Use("Sponge") return true
+        elseif (Decolorize(var[1]):find("Status: Heart stopped!")) then
+            Use("Defibrillator") return true
+        elseif (Decolorize(var[1]):find("%d+ shattered") and var[1]:find("tool4308")) then
+            Use("Pins") return true
+        elseif (surgery == true) then
+            if (Decolorize(var[1]):find("Status: Awake") or Decolorize(var[1]):find("Status: Coming to")) then
+                Use("Anesthetic") return true
+            elseif ((Decolorize(var[1]):find("blood slowly") or Decolorize(var[1]):find("blood!") or Decolorize(var[1]):find("blood very quickly!")) and not Decolorize(var[1]):find("Incisions: 0")) then
+                Use("Clamp") return true
+            elseif (Decolorize(var[1]):find("fever is") or not var[1]:find("Temp: `2")) then
+                if (var[1]:find("tool1266")) then Use("Antibiotics") return true
+                elseif (var[1]:find("tool4318")) then Use("Lab Kit") return true
+                end
+            elseif (not Decolorize(var[1]):find("Pulse: Strong") and not Decolorize(var[1]):find("Pulse: Steady")) then
+                Use("Transfusion") return true
+            elseif (Decolorize(var[1]):find("%d+ shattered")) then
+                if (var[1]:find("tool4308")) then Use("Pins") return true
+                else Use("Scalpel") return true end
+            elseif (var[1]:find("Incisions: `2")) then
+                surgery = false Use("Stitches") return true
+            else Use("Scalpel") return true end
+        elseif (surgery == false and not Decolorize(var[1]):find("Incisions: 0")) then
+            if (Decolorize(var[1]):find("Status: Awake") or Decolorize(var[1]):find("Status: Coming to")) then
+                Use("Anesthetic") return true
+            else Use("Stitches") return true end
+        elseif (Decolorize(var[1]):find("blood") and Decolorize(var[1]):find("Incisions: 0")) then
+            Use("Stitches") return true
+        elseif (Decolorize(var[1]):find("fever") or not var[1]:find("Temp: `2")) then
+            if (var[1]:find("tool1266")) then Use("Antibiotics") return true
+            elseif (var[1]:find("tool4318")) then Use("Lab Kit") return true end
+        elseif (Decolorize(var[1]):find("%d+ broken")) then
+            Use("Splint") return true
+        elseif (var[1]:find("not been diagnosed") and var[1]:find("tool4316")) then
+            Use("Ultrasound") return true
+        elseif (var[1]:find("tool1296")) then
+            Use("Fix It!") surgery = nil return true
+        elseif (Decolorize(var[1]):find("Status: Awake") or Decolorize(var[1]):find("Status: Coming to")) then
+            surgery = true Use("Anesthetic") return true
+        end
+    end
+end)
+
+-- Loop scan otomatis dihapus agar tidak terjadi double-wrench
+logToConsole("`9[Wirup] `0Script By WiRUP!")
+
+-- Fungsi bantu tambahan (opsional)
+function log(str)
+    logToConsole("`c[ `9AUTO SURGERY `c] `2"..str)
+end
