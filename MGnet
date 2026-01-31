@@ -71,5 +71,5 @@ function Stabilizer()
     end
 end
 
-sleep(30000)
+sleep(50000)
 Stabilizer()
