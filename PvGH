@@ -1,0 +1,363 @@
+--[[
+providerID = 928
+delayHt = 300
+warpDelay = 8000
+PosX,PosY = 71,47
+itemFromProvider = {914,916,918,920,924}
+worldSave = "WorldSave|ID"
+worldHarvest = {"World1|ID","World2|ID"}
+]]
+
+-- ========== WEBHOOK ==========
+local webhookUrl = "https://discord.com/api/webhooks/1472688260819058990/VrO926gYMJi-lB0EZ-ZsqtLhIEbdrSHJzVF4vY_YurYWZfG4eTK_20C6MoQE088G2arC"
+local last_world = ""
+
+function tableToJSON(tbl)
+    local function escapeString(str)
+        return str:gsub("\\", "\\\\"):gsub("\"", "\\\""):gsub("\n", "\\n"):gsub("\r", "\\r"):gsub("\t", "\\t")
+    end
+
+    local function convert(value)
+        local t = type(value)
+        if t == "string" then
+            return "\"" .. escapeString(value) .. "\""
+        elseif t == "number" or t == "boolean" then
+            return tostring(value)
+        elseif t == "table" then
+            local isArray = #value > 0
+            local result = {}
+            if isArray then
+                for i = 1, #value do
+                    table.insert(result, convert(value[i]))
+                end
+                return "[" .. table.concat(result, ",") .. "]"
+            else
+                for k, v in pairs(value) do
+                    table.insert(result, "\"" .. escapeString(k) .. "\":" .. convert(v))
+                end
+                return "{" .. table.concat(result, ",") .. "}"
+            end
+        end
+    end
+    return convert(tbl)
+end
+
+-- ========== FUNGSI BUAT WORLD LIST (KAYA BOTHAX) ==========
+function getWorldList()
+    local result = ""
+    for _, w in pairs(worldHarvest) do
+        local name, id = w:match("(.+)|(.+)")
+        if name and id then
+            result = result .. "`" .. name .. " | " .. id .. "`\n"
+        end
+    end
+    return result
+end
+
+function sendProviderNotif(world_name, door_id)
+    local player = getLocal()
+    if not player then return end
+    
+    -- Ambil world save ID
+    local save_name, save_id = worldSave:match("(.+)|(.+)")
+    
+    -- Cari world harvest yang cocok
+    local harvest_name, harvest_id = "", ""
+    for _, w in pairs(worldHarvest) do
+        local name, id = w:match("(.+)|(.+)")
+        if name == world_name then
+            harvest_name = name
+            harvest_id = id
+            break
+        end
+    end
+    
+    local Webhook = {
+        username = "GENTAHax Provider",
+        avatar_url = "https://cdn.discordapp.com/attachments/1099014561627127962/1252599161547919431/c033d400ab7d6cd046daec41d23d73f1.jpg",
+        useEmbeds = true,
+        embeds = {{
+            author = {
+                name = " World Provider",
+                icon_url = "https://cdn.discordapp.com/attachments/1196017759818096640/1252512761523732540/20240529_011008.png"
+            },
+            title = "**World Provider Information**",
+            color = 15258703,
+            fields = {{
+                name = "〔<a:crownyellow:1197027309652295711>〕 GrowID",
+                value = "||" .. player.name .. "||",
+                inline = true
+            }, {
+                name = "〔<a:earth:1185821804179230790>〕 WorldHarvest | DoorID",
+                value = "```" .. harvest_name .. " | " .. harvest_id .. "```",
+                inline = false
+            }, {
+                name = "〔<a:earth:1185821804179230790>〕 WorldSave | DoorID",
+                value = "```" .. save_name .. " | " .. save_id .. "```",
+                inline = false
+            }, {
+                name = "〔 <:scroll:1156965980967276565> 〕 World Lists",
+                value = getWorldList(),  -- TAMBAHAN WORLD LIST!
+                inline = true
+            }},
+            footer = {
+                text = "GENTAHax | " .. os.date("%d/%m/%Y %H:%M:%S")
+            }
+        }}
+    }
+    
+    makeRequest(webhookUrl, "POST", {["Content-Type"] = "application/json"}, tableToJSON(Webhook))
+end
+
+-- ========== DETECT WORLD CHANGE ==========
+function checkWorldChange()
+    local world = getWorld()
+    local player = getLocal()
+    
+    if world and player then
+        if world.name ~= last_world then
+            last_world = world.name
+            
+            -- Cek apakah world ini termasuk worldHarvest
+            for _, w in pairs(worldHarvest) do
+                local harvest_name, harvest_id = w:match("(.+)|(.+)")
+                if harvest_name == world.name then
+                    sendProviderNotif(world.name, harvest_id)
+                    break
+                end
+            end
+        end
+    end
+end
+
+-- (Sisanya sama persis kaya script lu dari sini ke bawah)
+-- Permanent Value
+punch,sameWorld,start,order = requestTileChange,false,true,1
+
+
+if not providerID then
+    providerID = blockId    
+end
+if not itemFromProvider then
+    itemFromProvider = itemToDrop
+end
+
+if not worldSave:find("|") then
+    worldSave = worldSave.."|ID"
+end
+for num, x in pairs(worldHarvest) do
+    if not x:find("|") then
+        worldHarvest[num] = worldHarvest[num].."|ID"
+    end
+end
+ 
+-- Check if same world or not
+if string.upper(worldHarvest[order]) == string.upper(worldSave) then
+    logToConsole("c[ `9Rayy#8446 `c] `2Auto Drop Item On Same World Detected.")
+    sameWorld = true
+    warpDelay = 1500
+end
+
+-- Check Current Pos
+function checkCurrPos(world)
+    if not world:find("|ID") then
+        while checkTile(getLocal().pos.x//32,getLocal().pos.y//32).fg == 6 do
+            sendPacket(3,"action|join_request\nname|"..world.."\ninvitedWorld|0")
+            sleep(2000)
+        end
+    end
+end
+
+-- Logging
+function log(str)
+    logToConsole("`9[ `cRayy#8446 `9] `2"..str)
+end
+
+-- Ont Function
+function ont(str)
+    sendVariant({[0] = [[OnTextOverlay]],[1] = "`9[ `cRayy#1099`` ] `2"..str},-1,100) 
+ end
+
+-- Repeat FindPath
+function repeatPath(x,y)
+    while not(getLocal().pos.x//32 == x and getLocal().pos.y//32 == y) do
+        findPath(x,y)
+        sleep(delayHt)
+    end
+end
+
+-- Warp functions
+function warp(world)
+    sendPacket(3,"action|join_request\nname|"..world.."\ninvitedWorld|0")
+end
+
+-- check inv function
+function inv(x)
+    for _, item in pairs(getInventory()) do
+	    if item.id == x then
+		    return item.amount
+		end
+	end
+	return 0
+end
+
+-- Take function
+function takeItem() 
+    for _, obj in pairs(getWorldObject()) do
+        local xn = getLocal().pos.x//32
+        local yn = getLocal().pos.y//32
+        xtiles = {xn-3,xn-2,xn-1,xn,xn+1,xn+2}
+        for _, tiles in pairs(xtiles) do
+            if (obj.pos.x)//32 == tiles and ((obj.pos.y)//32 == yn or obj.pos.y//32 == yn-1) then            
+                sendPacketRaw(false, {type=11,value=obj.oid,x=obj.pos.x,y=obj.pos.y})                                
+            end
+        end
+    end
+end
+
+-- dropitem func
+function dropitem(itemId)
+    sendPacket(2, "action|drop\n|itemID|"..itemId)
+    sendPacket(2,"action|dialog_return\ndialog_name|drop_item\nitemID|"..(itemId).."|\ncount|"..inv(itemId)) 
+end
+
+-- check drop func
+function checkDrop(a)
+    dropitem(a)
+    sleep(2500)
+    while inv(a) > 0 do
+        PosX = (PosX)-1
+        findPath(PosX,PosY) 
+        sleep(1500) 
+        dropitem(a) 
+        sleep(2500) 
+    end
+    sleep(1000)
+end
+
+-- drop func
+function Drop()
+    sleep(2000)
+    repeatPath(PosX,PosY)
+    for _, x in pairs(itemFromProvider) do
+        if inv(x) == 200 then
+            ont("Dropping "..getItemByID(x).name)
+            checkDrop(x)
+        end
+    end
+    if not sameWorld then
+        warp(worldHarvest[order])
+    end
+end
+
+-- Inventory Checker
+function checkInv()
+    for _, x in pairs(itemFromProvider) do
+        if inv(x) == 200 then
+            return true
+        end
+    end
+    return false
+end
+
+-- Farm Checker
+function checkFarm()
+    for _,k in pairs(getTile()) do
+        if k.fg == providerID and getExtraTile(k.pos.x,k.pos.y).valid and getExtraTile(k.pos.x,k.pos.y).ready then
+            return true
+        end
+    end
+    return false
+end
+
+
+-- harvest func
+function harvest()
+    sleep(2000)
+    for _, k in pairs(getTile()) do
+        if k.fg == providerID and getExtraTile(k.pos.x,k.pos.y).valid and getExtraTile(k.pos.x,k.pos.y).ready and not checkInv() then
+            repeatPath(k.pos.x,k.pos.y)
+           -- while getExtraTile(k.pos.x,k.pos.y).ready do
+                punch(k.pos.x,k.pos.y,18)
+                sleep(delayHt)
+          -- end  
+            takeItem()
+        end
+    end
+    if not checkFarm() then
+        if worldHarvest[order] then
+            logToConsole("`c[ `9Rayy#8446 `c] `2Done harvesting, moving to next world!!")
+            warp(worldHarvest[order])
+            order = order + 1
+        else
+            logToConsole("`c[ `9Rayy#8446 `c] `2Done harvesting all world!")
+            start = false
+        end
+    elseif checkInv() then
+        if sameWorld then
+            Drop()
+        else
+            warp(worldSave)
+        end
+    end
+end
+
+
+function mainFunc()
+    sleep(2000) 
+    
+    -- CEK WORLD CHANGE UNTUK WEBHOOK
+    checkWorldChange()
+    
+    if start then
+        if getWorld().name == string.upper(worldSave:match("(.+)|")) and not sameWorld then
+            checkCurrPos(worldSave)
+            log("Dropping Blocks..")  
+            Drop()
+        elseif getWorld().name == string.upper(worldHarvest[order]:match("(.+)|"))then
+            checkCurrPos(worldHarvest[order])
+            log("Start Harvesting")  
+            harvest()
+        else
+            warp(worldHarvest[order])
+            sleep(2000)
+        end
+        sleep(warpDelay)
+    end
+end
+
+function AvoidError()
+    while true do
+        if not stopScript then
+            local status, err = pcall(mainFunc)
+            if not status then
+                logToConsole("`2Trying To Reconnect...")
+                sleep(1000)
+            end
+        end
+    end
+end
+
+opening = [[
+add_label_with_icon|big|`wAuto Harvest All Provider |left| ]] ..providerID..[[|
+add_spacer|small|
+add_textbox|`0By `cWiRUP|
+add_textbox|`0If you have any question, feel free to ask me!!|right|
+add_spacer|small|
+add_textbox|`9Script Info & Rules:|left|
+add_label_with_icon|small|`0Do not `4SELL `0THIS SCRIPT!|left|482|
+add_label_with_icon|small|`0Block Id        : `2]]..providerID..[[|left|482|
+add_label_with_icon|small|`0Delay            : `2]]..delayHt..[[|left|482|
+add_label_with_icon|small|`0PosX,PosY     : `2]]..PosX..[[,]]..PosY..[[|left|482|
+add_label_with_icon|small|`0Dont Forget To Do The Config First |left|482|
+add_label_with_icon|small|`0Auto Drop When Full|left|482|
+add_spacer|small|
+end_dialog|itro|Close|                   OKE                   |
+]]
+s = {}
+s[0] = "OnDialogRequest"
+s[1] = opening
+sendVariant(s,-1,100)
+patchMemoryByName("Mod Fly")
+AvoidError()
+
