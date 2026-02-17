@@ -342,7 +342,7 @@ opening = [[
 add_label_with_icon|big|`wAuto Harvest All Provider |left| ]] ..providerID..[[|
 add_spacer|small|
 add_textbox|`0By `cWiRUP|
-add_textbox|``9discord.gg/Txvdtdzu7X|right|
+add_textbox|`9discord.gg/Txvdtdzu7X|right|
 add_spacer|small|
 add_textbox|`9Script Info:|left|
 add_label_with_icon|small|`0Block Id        : `2]]..providerID..[[|left|482|
