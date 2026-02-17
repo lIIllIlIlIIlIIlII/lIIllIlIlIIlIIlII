@@ -342,10 +342,9 @@ opening = [[
 add_label_with_icon|big|`wAuto Harvest All Provider |left| ]] ..providerID..[[|
 add_spacer|small|
 add_textbox|`0By `cWiRUP|
-add_textbox|`0If you have any question, feel free to ask me!!|right|
+add_textbox|``9discord.gg/Txvdtdzu7X|right|
 add_spacer|small|
-add_textbox|`9Script Info & Rules:|left|
-add_label_with_icon|small|`0Do not `4SELL `0THIS SCRIPT!|left|482|
+add_textbox|`9Script Info:|left|
 add_label_with_icon|small|`0Block Id        : `2]]..providerID..[[|left|482|
 add_label_with_icon|small|`0Delay            : `2]]..delayHt..[[|left|482|
 add_label_with_icon|small|`0PosX,PosY     : `2]]..PosX..[[,]]..PosY..[[|left|482|
