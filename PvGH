@@ -286,11 +286,11 @@ function harvest()
     end
     if not checkFarm() then
         if worldHarvest[order] then
-            logToConsole("`c[ `9Rayy#8446 `c] `2Done harvesting, moving to next world!!")
+            logToConsole("`c[ `9System `c] `2Done harvesting, moving to next world!!")
             warp(worldHarvest[order])
             order = order + 1
         else
-            logToConsole("`c[ `9Rayy#8446 `c] `2Done harvesting all world!")
+            logToConsole("`c[ `9System `c] `2Done harvesting all world!")
             start = false
         end
     elseif checkInv() then
