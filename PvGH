@@ -153,7 +153,7 @@ end
  
 -- Check if same world or not
 if string.upper(worldHarvest[order]) == string.upper(worldSave) then
-    logToConsole("c[ `9Rayy#8446 `c] `2Auto Drop Item On Same World Detected.")
+    logToConsole("c[ `9System `c] `2Auto Drop Item On Same World Detected.")
     sameWorld = true
     warpDelay = 1500
 end
@@ -170,12 +170,12 @@ end
 
 -- Logging
 function log(str)
-    logToConsole("`9[ `cRayy#8446 `9] `2"..str)
+    logToConsole("`9[ `cSystem `9] `2"..str)
 end
 
 -- Ont Function
 function ont(str)
-    sendVariant({[0] = [[OnTextOverlay]],[1] = "`9[ `cRayy#1099`` ] `2"..str},-1,100) 
+    sendVariant({[0] = [[OnTextOverlay]],[1] = "`9[ `cSystem`` ] `2"..str},-1,100) 
  end
 
 -- Repeat FindPath
